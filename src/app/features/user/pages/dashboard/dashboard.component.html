@@ -1,0 +1,24 @@
+@if (role === 'admin' && (admins$ | async); as admins) {
+<div class="container">
+  <ul>
+    <h2>Admins</h2>
+    @for (admin of admins; track admin.id) {
+    <li (click)="seeAdminDetails(admin.id)">
+      <p>{{ admin.name }}</p>
+    </li>
+    }
+  </ul>
+</div>
+} @if ((role === 'tester' || role === 'dev') && ( customers$ | async); as
+customers) {
+<div class="container">
+  <ul>
+    <h2>Customers</h2>
+    @for (customer of customers; track customer.id) {
+    <li (click)="seeCustomerDetails(customer.id)">
+      <p>{{ customer.name }}</p>
+    </li>
+    }
+  </ul>
+</div>
+}

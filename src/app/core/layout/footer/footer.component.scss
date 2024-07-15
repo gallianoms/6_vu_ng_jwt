@@ -1,0 +1,13 @@
+@import '@/app/shared/styles/styles.scss';
+
+.footer {
+  @include center-flex;
+  @include background-text-color($color-secondary, $color-accent);
+
+  height: 60px;
+  border-top: 1px solid $color-text;
+}
+
+.footer-content {
+  text-align: center;
+}

@@ -1,0 +1,9 @@
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <img src="assets/images/vueling.svg" alt="Logo" class="navbar-logo" />
+  </a>
+
+  @if(isLoggedIn$ | async) {
+  <a (click)="logout()" class="logout-link">Logout</a>
+  }
+</nav>

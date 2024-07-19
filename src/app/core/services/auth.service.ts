@@ -5,10 +5,15 @@ import { BehaviorSubject, Observable, catchError, map, of } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
 import { Router } from '@angular/router';
 
-type Token = {
-  accessToken: string;
+type AccessToken = {
+  token: string;
+};
+
+type refreshToken = {
   refreshToken: string;
 };
+
+type Token = AccessToken & refreshToken;
 
 @Injectable({
   providedIn: 'root',
@@ -28,7 +33,7 @@ export class AuthService {
       })
       .pipe(
         map((response: Token) => {
-          this.localStorage.setItem('accessToken', response.accessToken);
+          this.localStorage.setItem('token', response.token);
           this.localStorage.setItem('refreshToken', response.refreshToken);
           this._loggedIn$.next(true);
           this._role$.next(role);
@@ -46,15 +51,15 @@ export class AuthService {
   }
 
   public logout(): void {
-    this.localStorage.removeItem('accessToken');
+    this.localStorage.removeItem('token');
     this.localStorage.removeItem('refreshToken');
     this.router.navigate(['/login']);
     this._loggedIn$.next(false);
   }
 
-  public refreshToken(): Observable<{ accessToken: string }> {
+  public refreshToken(): Observable<AccessToken> {
     const refreshToken = this.localStorage.getItem('refreshToken');
-    return this.http.post<{ accessToken: string }>(
+    return this.http.post<{ token: string }>(
       environment.baseUrl + '/login/refresh-token',
       {
         refreshToken,

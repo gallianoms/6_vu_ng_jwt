@@ -27,6 +27,7 @@ export class LoginComponent {
     const { role, password } = this.loginForm.value;
     if (role && password && this.loginForm.valid) {
       this.authService.login(role, password).subscribe(isValid => {
+        console.log(isValid);
         if (isValid) this.router.navigate(['/dashboard']);
         else alert('Invalid credentials');
       });

@@ -6,57 +6,68 @@ import {
   HttpRequest,
 } from '@angular/common/http';
 import { LocalStorageService } from '../services/local-storage.service';
-import {
-  catchError,
-  throwError,
-  pipe,
-  switchMap,
-  Observable,
-  take,
-} from 'rxjs';
+import { catchError, switchMap, take, Observable, throwError, of } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 export const jwtInterceptor: HttpInterceptorFn = (
   req,
   next,
-): Observable<HttpEvent<any>> => {
+): Observable<HttpEvent<unknown>> => {
   const authService = inject(AuthService);
   const localStorage = inject(LocalStorageService);
+  const token = localStorage.getItem('token');
 
-  const accessToken = getAccessToken() || '';
+  // Clone the request if token is available
+  const authReq = token
+    ? req.clone({ headers: req.headers.set('Authorization', token) })
+    : req;
 
-  if (accessToken) {
-    req = req.clone({
-      headers: req.headers.set('Authorization', accessToken),
-    });
-  }
-
-  // TODO: FIX ERROR
-  return next(req).pipe(
-    catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !req.url.includes('/login/authenticate')) {
-        return authService.refreshToken().pipe(
-          take(1),
-          switchMap(response => {
-            localStorage.setItem('accessToken', response.accessToken);
-            const newReq = req.clone({
-              headers: req.headers.set('Authorization', response.accessToken),
-            });
-            return next(newReq);
-          }),
-          catchError(refreshError => {
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            return throwError(() => refreshError);
-          }),
-        );
-      }
-      return throwError(() => error);
-    }),
+  return next(authReq).pipe(
+    catchError((error: HttpErrorResponse) =>
+      handleAuthError(error, authService, localStorage, req, next),
+    ),
   );
-  // return next(req);
 };
 
-const getAccessToken = (): string | null => {
-  return localStorage.getItem('accessToken');
+const handleAuthError = (
+  error: HttpErrorResponse,
+  authService: AuthService,
+  localStorage: LocalStorageService,
+  req: HttpRequest<unknown>,
+  next: (req: HttpRequest<unknown>) => Observable<HttpEvent<unknown>>,
+): Observable<HttpEvent<unknown>> => {
+  const isUnauthorized = error.status === 401;
+  const isAuthRequest = req.url.includes('authenticate');
+
+  if (!isUnauthorized || isAuthRequest) {
+    return throwError(() => error);
+  }
+
+  return authService.refreshToken().pipe(
+    take(1),
+    switchMap(response => {
+      const { token } = response;
+
+      if (token) {
+        localStorage.setItem('token', token);
+        const authReq = req.clone({
+          headers: req.headers.set('Authorization', token),
+        });
+        return next(authReq);
+      }
+
+      clearTokens(localStorage);
+      return throwError(() => new Error('Failed to refresh access token'));
+    }),
+
+    catchError(refreshError => {
+      clearTokens(localStorage);
+      return throwError(() => refreshError);
+    }),
+  );
+};
+
+const clearTokens = (localStorage: LocalStorageService) => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
 };

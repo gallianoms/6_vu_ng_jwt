@@ -9,7 +9,7 @@ import { Component, OnInit, inject } from '@angular/core';
 })
 export class HeaderComponent implements OnInit {
   private authService = inject(AuthService);
-  isLoggedIn$ = new Observable<boolean>(observer => observer.next(false));
+  isLoggedIn$ = new Observable<boolean>();
 
   ngOnInit(): void {
     this.isLoggedIn$ = this.authService.loggedIn$;
